@@ -24,14 +24,14 @@ class FirstFragment() : Fragment(), SensorEventListener {
     private var lastVib: Long = 0L
     private lateinit var vibrator: Vibrator
     private var lastAccumulatedMovement: Float = 0F
-    private var accumulatedMovement: Float = 0F;
+    private var accumulatedMovement: Float = 0F
     private var sensorEventCounter: Int = 0
     private var lastMode: String = "--"
     private var counter: Int = 0
-    private var delay: Long = 5000;
+    private var delay: Long = 5000
     private lateinit var sensorManager: SensorManager
     private var mSensor: Sensor? = null
-    private val effect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE);
+    private val effect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE)
 
 
     override fun onCreateView(
@@ -44,7 +44,7 @@ class FirstFragment() : Fragment(), SensorEventListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        sensorManager = context?.getSystemService(Context.SENSOR_SERVICE) as SensorManager;
+        sensorManager = context?.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
         if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
             val sensors: List<Sensor> = sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER)
@@ -59,14 +59,11 @@ class FirstFragment() : Fragment(), SensorEventListener {
         val notification =RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         ringtone = RingtoneManager.getRingtone(context, notification)
 
+        checkChargeStatus(true)
 
-        val delayedHandler: Handler = Handler()
-        val r = Runnable{checkChargeStatus(true)}
-        delayedHandler.postDelayed(r, this.delay)
-
-        view.findViewById<Button>(R.id.button_first).setOnClickListener {
-            LostWirelessCharging();
-            checkChargeStatus(false);
+        view.findViewById<Button>(R.id.button_test).setOnClickListener {
+            LostWirelessCharging()
+            checkChargeStatus(false)
 
         }
     }
@@ -82,34 +79,36 @@ class FirstFragment() : Fragment(), SensorEventListener {
                 || status == BatteryManager.BATTERY_STATUS_FULL
 
         val chargePlug: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) ?: -1
-        val usbCharge: Boolean = chargePlug == BatteryManager.BATTERY_PLUGGED_USB
-        val acCharge: Boolean = chargePlug == BatteryManager.BATTERY_PLUGGED_AC
-
-        counter++;
-        var s = counter.toString()+" status: "+status.toString()+ " chargePlug: "+chargePlug.toString() + "\n\n";
+        counter++
+        var s = counter.toString()+" status: "+status.toString()+ " chargePlug: "+chargePlug.toString() + "\n\n"
         s += "movement: " + lastAccumulatedMovement + "\n\n"
         s += "delay: " + delay + "\n\n"
         s += "acc: " + lastSensorString + "\n\n"
         s += "eventCounter: " +sensorEventCounter + "\n\n"
         var mode = "--"
         if (isCharging) {
-            if (usbCharge)
+            if (chargePlug == BatteryManager.BATTERY_PLUGGED_USB)
                 mode = "USB"
-            else if (acCharge)
+            else if (chargePlug == BatteryManager.BATTERY_PLUGGED_AC)
                 mode = "AC"
-            else
-            {
+            else if (chargePlug == BatteryManager.BATTERY_PLUGGED_WIRELESS)
                 mode = "QI"
-                delay = 500;
-            }
+            else
+                mode = "??"
         }
         s += mode
-        if ((lastMode == "QI" || lastMode == "USB") && mode == "--")
+
+        if (modeMatch(mode))
         {
-            LostWirelessCharging();
+            delay = 500
+        }
+        else if (mode == "--" && modeMatch(lastMode))
+        {
+            delay = 5000
+            LostWirelessCharging()
         }
 
-        this.lastMode = mode;
+        this.lastMode = mode
 
         textview_first.text = s
 
@@ -120,6 +119,12 @@ class FirstFragment() : Fragment(), SensorEventListener {
             }, delay)
         }
 
+    }
+
+    fun modeMatch(mode: String): Boolean {
+        return mode == "QI" && cb_qi.isChecked ||
+                    mode == "USB" && cb_usb.isChecked ||
+                    mode == "AC" && cb_ac.isChecked;
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
@@ -136,22 +141,22 @@ class FirstFragment() : Fragment(), SensorEventListener {
         if (lastSensortimeStamp != 0L && lastSensortimeStamp != event.timestamp)
         {
             val movement = Math.abs(lastSensorValue - event.values[0])
-            var t = System.currentTimeMillis();
-            if (movement >5)
+
+            val t = System.currentTimeMillis()
+            if (movement > 5)
             {
                 lastSensorString = "motion detected: " + movement.toString()
                 sensorManager.unregisterListener(this)
-                delay=5000;
             }
-            else if (t-lastVib > 800)
+            else if (t - lastVib > 800)
             {
                 lastSensorString = "low motion: " + movement.toString()
 //                lastSensorString = "${event.timestamp}, ${event.values[0]}, ${event.values[1]}, ${event.values[2]}"
-                accumulatedMovement = movement;
-                vibrator.vibrate(effect);
+                accumulatedMovement = movement
+                vibrator.vibrate(effect)
                 if (!ringtone.isPlaying)
                     ringtone.play()
-                lastVib = t;
+                lastVib = t
             }
         }
 

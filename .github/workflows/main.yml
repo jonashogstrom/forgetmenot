@@ -36,3 +36,9 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
           retention-days: 7
+          
+      - name: Path lister action
+        uses: Rishabh510/Path-lister-action@1.0
+        with:
+          path: app
+          type: apk

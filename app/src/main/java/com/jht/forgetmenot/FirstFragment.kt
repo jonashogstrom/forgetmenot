@@ -98,13 +98,9 @@ class FirstFragment() : Fragment(), SensorEventListener {
         }
         s += mode
 
-        if (modeMatch(mode))
+        delay = if (modeMatch(mode)) 500 else 5000
+        if (mode == "--" && modeMatch(lastMode))
         {
-            delay = 500
-        }
-        else if (mode == "--" && modeMatch(lastMode))
-        {
-            delay = 5000
             LostWirelessCharging()
         }
 
@@ -118,7 +114,6 @@ class FirstFragment() : Fragment(), SensorEventListener {
                 checkChargeStatus(true)
             }, delay)
         }
-
     }
 
     fun modeMatch(mode: String): Boolean {
